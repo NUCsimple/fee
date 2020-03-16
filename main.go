@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -16,10 +17,10 @@ type instanceFee struct {
 	Size     int
 }
 type InstanceFeeByMonth struct {
-	Duration int           //时长
-	InstanceType string   //实例规格
-	Fee float64          //费用
-	CoreTime int        //核时
+	Duration     int     //时长
+	InstanceType string  //实例规格
+	Fee          float64 //费用
+	CoreTime     int     //核时
 }
 
 const (
@@ -29,15 +30,15 @@ const (
 )
 
 var (
-	codeIndex         = 6
-	payTypeIndex      = 10
-	durationIndex     = 14
-	instanceIdIndex   = 19
-	feeIndex          = 32
-	instanceTypeIndex = 24
-	dateIndex         = 1
-	feeTypeIndex      = 26
-	billDateIndex    = 0
+	codeIndex           = 6
+	payTypeIndex        = 10
+	durationIndex       = 14
+	instanceIdIndex     = 19
+	feeIndex            = 32
+	instanceTypeIndex   = 24
+	dateIndex           = 1
+	feeTypeIndex        = 26
+	billDateIndex       = 0
 	instanceConfigIndex = 23
 )
 
@@ -47,7 +48,7 @@ var (
 
 func main() {
 	flag.Parse()
-
+	CalGPU := false
 	feeBytes, err := ioutil.ReadFile(*feePath)
 	if err != nil {
 		fmt.Errorf("failed to parse fee,because of %v", err)
@@ -61,7 +62,7 @@ func main() {
 		return
 	}
 
-	codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex, dateIndex, feeTypeIndex, billDateIndex , instanceConfigIndex= FindIndex(records[0])
+	codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex, dateIndex, feeTypeIndex, billDateIndex, instanceConfigIndex = FindIndex(records[0])
 	fee := make(map[string]*instanceFee)
 	instances := make(map[string]int)
 	instanceMap := make(map[string]map[string]*InstanceFeeByMonth)
@@ -73,8 +74,16 @@ func main() {
 			continue
 		}
 
-		if record[codeIndex] == "ecs" && record[payTypeIndex] == "后付费" && (feeTypeIndex==0 || record[feeTypeIndex] == "云服务器配置") {
-			AddInstanceFeeByMonth(record,instanceMap)
+		if record[codeIndex] == "ecs" && record[payTypeIndex] == "后付费" && (feeTypeIndex == 0 || record[feeTypeIndex] == "云服务器配置") {
+			if ok, _ := regexp.MatchString("^ecs.g", record[instanceTypeIndex]); ok {
+				if CalGPU == true {
+					AddInstanceFeeByMonth(record, instanceMap)
+				} else {
+				}
+			} else {
+				AddInstanceFeeByMonth(record, instanceMap)
+			}
+
 			if PreDate == "" {
 				PreDate = record[dateIndex]
 			} else if PreDate != record[dateIndex] {
@@ -112,43 +121,50 @@ func main() {
 		}
 	}
 	PrintFee(PreDate, fee)
+	var Total_CoreTime int
+	var Total_Fee float64
 
-	for instance,instanceFee :=range instanceMap{
-		for time,Total :=range instanceFee{
-			fmt.Printf("The instanceType %s in %s 总费用是 is %f \n",instance,time,Total.Fee)
-			fmt.Printf("The instanceType %s in %s 总核时是 is %v \n",instance,time,Total.CoreTime/3600)
-			fmt.Printf("The instanceType %s in %s 核时单价是 is %f \n",instance,time,Total.Fee/float64(Total.CoreTime/3600))
+	for instance, instanceFee := range instanceMap {
+		for month, month_Total := range instanceFee {
+			Total_CoreTime += month_Total.CoreTime
+			Total_Fee += month_Total.Fee
+			fmt.Printf("The instanceType%s在%s月,总费用是 %f\n", instance,month,month_Total.Fee)
+			fmt.Printf("The instanceType%s在%s月,总核时是 %v\n", instance,month,month_Total.CoreTime/3600)
+			fmt.Printf("The instanceType%s在%s月,核时单价是 %f\n", instance,month,month_Total.Fee/float64(month_Total.CoreTime/3600))
 		}
 	}
+	fmt.Printf("总核时为： %v \n", Total_CoreTime/3600)
+	fmt.Printf("总费用为： %v \n", Total_Fee)
+	fmt.Printf("总计的核时单价为： %v \n", Total_Fee/float64(Total_CoreTime/3600))
 }
 
-func AddInstanceFeeByMonth(record []string,instanceMap map[string]map[string]*InstanceFeeByMonth)  {
+func AddInstanceFeeByMonth(record []string, instanceMap map[string]map[string]*InstanceFeeByMonth) {
 	//对应月份，对应实例规格的账单计算
-	instancefee,err :=strconv.ParseFloat(record[feeIndex],64)
-	duration,err :=strconv.Atoi(record[durationIndex])
-	configs:= strings.Split(record[instanceConfigIndex],";")
+	instancefee, err := strconv.ParseFloat(record[feeIndex], 64)
+	duration, err := strconv.Atoi(record[durationIndex])
+	configs := strings.Split(record[instanceConfigIndex], ";")
 	var cores int
-	for _,config :=range configs{
-		if strings.Contains(config,"CPU"){
-			coresStr:=strings.Split(config,":")[1]
-			cores,err = strconv.Atoi(coresStr)
-			if err!=nil{
-				log.Fatalf("instance core 2 int err: %s \n",err)
+	for _, config := range configs {
+		if strings.Contains(config, "CPU") {
+			coresStr := strings.Split(config, ":")[1]
+			cores, err = strconv.Atoi(coresStr)
+			if err != nil {
+				log.Fatalf("instance core 2 int err: %s \n", err)
 			}
 		}
 	}
-	if err!=nil{
-		log.Fatalf("instance data 2 int err: %s \n",err)
+	if err != nil {
+		log.Fatalf("instance data 2 int err: %s \n", err)
 	}
-	if instanceMap[record[instanceTypeIndex]][record[billDateIndex]] == nil{
+	if instanceMap[record[instanceTypeIndex]][record[billDateIndex]] == nil {
 		instanceMap[record[instanceTypeIndex]] = make(map[string]*InstanceFeeByMonth)
 		instance := &InstanceFeeByMonth{}
 		instanceMap[record[instanceTypeIndex]][record[billDateIndex]] = instance
 		instance.Fee += instancefee
 		instance.CoreTime = duration * cores
-	}else {
-		instanceMap[record[instanceTypeIndex]][record[billDateIndex]].Fee+= instancefee
-		instanceMap[record[instanceTypeIndex]][record[billDateIndex]].CoreTime += duration *cores
+	} else {
+		instanceMap[record[instanceTypeIndex]][record[billDateIndex]].Fee += instancefee
+		instanceMap[record[instanceTypeIndex]][record[billDateIndex]].CoreTime += duration * cores
 	}
 }
 func PrintFee(date string, fee map[string]*instanceFee) {
@@ -198,7 +214,7 @@ func PrintFee(date string, fee map[string]*instanceFee) {
 	fmt.Printf("按量付费ECS总费用：%f\n", sumFee)
 }
 
-func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex int, dateIndex int, feeTypeIndex int, billDateIndex int,instanceConfigIndex int) {
+func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex int, dateIndex int, feeTypeIndex int, billDateIndex int, instanceConfigIndex int) {
 	for index, txt := range title {
 		if txt == "产品Code" {
 			codeIndex = index
@@ -209,7 +225,7 @@ func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instance
 		}
 
 		if txt == "实例配置" {
-			instanceConfigIndex =index
+			instanceConfigIndex = index
 		}
 
 		if txt == "消费类型" {
@@ -233,7 +249,7 @@ func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instance
 		}
 
 		if txt == "账期" {
-			billDateIndex =index
+			billDateIndex = index
 		}
 
 		if txt == "计费项" {
