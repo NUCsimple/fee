@@ -21,6 +21,7 @@ type InstanceFeeByMonth struct {
 	InstanceType string  //实例规格
 	Fee          float64 //费用
 	CoreTime     int     //核时
+
 }
 
 const (
@@ -40,6 +41,7 @@ var (
 	feeTypeIndex        = 26
 	billDateIndex       = 0
 	instanceConfigIndex = 23
+	cashCouponIndex     = 29
 )
 
 var (
@@ -62,18 +64,25 @@ func main() {
 		return
 	}
 
-	codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex, dateIndex, feeTypeIndex, billDateIndex, instanceConfigIndex = FindIndex(records[0])
+	codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex, dateIndex, feeTypeIndex, billDateIndex, instanceConfigIndex, cashCouponIndex = FindIndex(records[0])
 	fee := make(map[string]*instanceFee)
 	instances := make(map[string]int)
 	instanceMap := make(map[string]map[string]*InstanceFeeByMonth)
 	PreDate := ""
+	var Total_CashCoupon  float64
 
 	for index, record := range records {
 		if index == 0 {
 			// skip title
 			continue
 		}
-
+		cashCoupon,err:=strconv.ParseFloat(record[cashCouponIndex],64)
+		if err!=nil{
+			fmt.Printf("代金券转换金额失败:%v\n",err)
+			return
+		}
+		Total_CashCoupon+=cashCoupon
+		//
 		if record[codeIndex] == "ecs" && record[payTypeIndex] == "后付费" && (feeTypeIndex == 0 || record[feeTypeIndex] == "云服务器配置") {
 			if ok, _ := regexp.MatchString("^ecs.g", record[instanceTypeIndex]); ok {
 				if CalGPU == true {
@@ -128,14 +137,15 @@ func main() {
 		for month, month_Total := range instanceFee {
 			Total_CoreTime += month_Total.CoreTime
 			Total_Fee += month_Total.Fee
-			fmt.Printf("The instanceType%s在%s月,总费用是 %f\n", instance,month,month_Total.Fee)
-			fmt.Printf("The instanceType%s在%s月,总核时是 %v\n", instance,month,month_Total.CoreTime/3600)
-			fmt.Printf("The instanceType%s在%s月,核时单价是 %f\n", instance,month,month_Total.Fee/float64(month_Total.CoreTime/3600))
+			fmt.Printf("The instanceType %s在%s月,总费用是 %f\n", instance,month,month_Total.Fee)
+			fmt.Printf("The instanceType %s在%s月,总核时是 %v\n", instance,month,month_Total.CoreTime/3600)
+			fmt.Printf("The instanceType %s在%s月,核时单价是 %f\n", instance,month,month_Total.Fee/float64(month_Total.CoreTime/3600))
 		}
 	}
 	fmt.Printf("总核时为： %v \n", Total_CoreTime/3600)
 	fmt.Printf("总费用为： %v \n", Total_Fee)
 	fmt.Printf("总计的核时单价为： %v \n", Total_Fee/float64(Total_CoreTime/3600))
+	fmt.Printf("代金券总金额为: %v\n",Total_CashCoupon)
 }
 
 func AddInstanceFeeByMonth(record []string, instanceMap map[string]map[string]*InstanceFeeByMonth) {
@@ -167,6 +177,7 @@ func AddInstanceFeeByMonth(record []string, instanceMap map[string]map[string]*I
 		instanceMap[record[instanceTypeIndex]][record[billDateIndex]].CoreTime += duration * cores
 	}
 }
+
 func PrintFee(date string, fee map[string]*instanceFee) {
 	//fmt.Printf("总台数：%d 总核时：%d 总费用：%f",len(instances),)
 
@@ -214,7 +225,7 @@ func PrintFee(date string, fee map[string]*instanceFee) {
 	fmt.Printf("按量付费ECS总费用：%f\n", sumFee)
 }
 
-func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex int, dateIndex int, feeTypeIndex int, billDateIndex int, instanceConfigIndex int) {
+func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instanceIdIndex, feeIndex, instanceTypeIndex int, dateIndex int, feeTypeIndex int, billDateIndex int, instanceConfigIndex int,cashCouponIndex int) {
 	for index, txt := range title {
 		if txt == "产品Code" {
 			codeIndex = index
@@ -242,6 +253,10 @@ func FindIndex(title []string) (codeIndex, payTypeIndex, durationIndex, instance
 
 		if txt == "应付金额" {
 			feeIndex = index
+		}
+
+		if txt == "代金券抵扣" {
+			cashCouponIndex = index
 		}
 
 		if txt == "日期" || txt == "消费时间" {

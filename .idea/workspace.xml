@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="31c4c3bd-c471-42a5-8f48-6fc59be18c39" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fee.exe" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -36,9 +37,9 @@
     <property name="configurable.Project.GOPATH.is.expanded" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="D:/Go/new" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../gcc" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
-    <property name="settings.editor.selected.configurable" value="com.goide.configuration.GoLibrariesConfigurableProvider" />
+    <property name="settings.editor.selected.configurable" value="web.server" />
   </component>
   <component name="RunManager">
     <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
@@ -52,11 +53,6 @@
       <directory value="$PROJECT_DIR$/" />
       <method v="2" />
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Go Build.go build main.go" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="ServiceViewManager">
     <option name="viewStates">
@@ -74,30 +70,22 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="233" y="2" key="#GOROOT" timestamp="1583846826790">
+    <state x="421" y="99" key="FileChooserDialogImpl" timestamp="1594465750494">
       <screen x="0" y="0" width="1280" height="680" />
     </state>
-    <state x="233" y="2" key="#GOROOT/0.0.1280.680@0.0.1280.680" timestamp="1583846826790" />
-    <state x="421" y="99" key="FileChooserDialogImpl" timestamp="1584341602146">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="421" y="99" key="FileChooserDialogImpl/0.0.1280.680@0.0.1280.680" timestamp="1584341602146" />
-    <state x="144" y="0" key="SettingsEditor" timestamp="1583846861477">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="144" y="0" key="SettingsEditor/0.0.1280.680@0.0.1280.680" timestamp="1583846861477" />
+    <state x="421" y="99" key="FileChooserDialogImpl/0.0.1280.680@0.0.1280.680" timestamp="1594465750494" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/main.go</url>
-          <line>63</line>
+          <line>65</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/main.go</url>
-          <line>70</line>
+          <line>73</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>
